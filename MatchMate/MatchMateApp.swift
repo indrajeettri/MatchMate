@@ -6,15 +6,25 @@
 //
 
 import SwiftUI
+import CoreData
 
 @main
 struct MatchMateApp: App {
-    let coreDataManager = CoreDataManager.shared
+    let persistenceController = PersistenceController.shared
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.managedObjectContext, coreDataManager.viewContext)
+                .environment(\.managedObjectContext, persistenceController.viewContext)
         }
+    }
+}
+
+// MARK: - Persistence Controller (for SwiftUI Environment)
+final class PersistenceController {
+    static let shared = PersistenceController()
+    
+    var viewContext: NSManagedObjectContext {
+        (CoreDataManager.shared as! CoreDataManager).viewContext
     }
 }

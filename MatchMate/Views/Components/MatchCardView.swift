@@ -13,85 +13,62 @@ struct MatchCardView: View {
     let onDecline: () -> Void
     
     @State private var imageLoadFailed = false
+    @State private var isAcceptPressed = false
+    @State private var isDeclinePressed = false
+    
+    // Cyan/Teal color matching the reference design
+    private let accentColor = Color(red: 0.18, green: 0.8, blue: 0.82)
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Profile Image Section
-            ZStack(alignment: .bottomLeading) {
+        VStack(spacing: 20) {
+            // Profile Image - Large circular with shadow
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 200, height: 200)
+                    .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
+                
                 profileImage
-                
-                // Gradient Overlay
-                LinearGradient(
-                    gradient: Gradient(colors: [.clear, .black.opacity(0.7)]),
-                    startPoint: .center,
-                    endPoint: .bottom
-                )
-                
-                // Name and Location
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(profile.name)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.caption)
-                        Text(profile.city)
-                            .font(.subheadline)
-                    }
-                    .foregroundColor(.white.opacity(0.9))
-                }
-                .padding()
+                    .frame(width: 190, height: 190)
+                    .clipShape(Circle())
             }
-            .frame(height: 280)
-            .clipped()
             
-            // Details Section
-            VStack(alignment: .leading, spacing: 12) {
-                // Company Info
-                HStack(spacing: 8) {
-                    Image(systemName: "briefcase.fill")
-                        .foregroundColor(.pink)
-                        .frame(width: 24)
-                    Text(profile.company)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+            // Name in cyan color with underline
+            VStack(spacing: 6) {
+                Text(profile.name)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(accentColor)
                 
-                // Email Info
-                HStack(spacing: 8) {
-                    Image(systemName: "envelope.fill")
-                        .foregroundColor(.pink)
-                        .frame(width: 24)
-                    Text(profile.email)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-                
-                // Phone Info
-                HStack(spacing: 8) {
-                    Image(systemName: "phone.fill")
-                        .foregroundColor(.pink)
-                        .frame(width: 24)
-                    Text(profile.phone)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                
-                Divider()
-                    .padding(.vertical, 4)
-                
-                // Status or Action Buttons
-                statusOrActionView
+                // Underline
+                Rectangle()
+                    .fill(accentColor)
+                    .frame(width: 60, height: 3)
+                    .cornerRadius(1.5)
             }
-            .padding()
-            .background(Color(.systemBackground))
+            
+            // Address details
+            VStack(spacing: 4) {
+                Text(profile.address)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                
+                Text(profile.city)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            .padding(.horizontal)
+            
+            // Status or Action Buttons
+            statusOrActionView
+                .padding(.top, 12)
         }
+        .padding(.vertical, 28)
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity)
         .background(Color(.systemBackground))
         .cornerRadius(20)
-        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+        .shadow(color: .black.opacity(0.1), radius: 12, x: 0, y: 6)
     }
     
     // MARK: - Profile Image
@@ -123,7 +100,7 @@ struct MatchCardView: View {
     private var placeholderImage: some View {
         ZStack {
             LinearGradient(
-                gradient: Gradient(colors: [.pink.opacity(0.3), .purple.opacity(0.3)]),
+                gradient: Gradient(colors: [accentColor.opacity(0.3), accentColor.opacity(0.5)]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -132,7 +109,7 @@ struct MatchCardView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 80, height: 80)
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(.white)
         }
     }
     
@@ -150,44 +127,50 @@ struct MatchCardView: View {
     }
     
     private var actionButtons: some View {
-        HStack(spacing: 16) {
-            // Decline Button
-            Button(action: onDecline) {
-                HStack {
-                    Image(systemName: "xmark")
-                        .font(.headline)
-                    Text("Decline")
-                        .fontWeight(.semibold)
+        HStack(spacing: 50) {
+            // Decline Button - Circular with X
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    isDeclinePressed = true
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.red, lineWidth: 2)
-                )
-                .foregroundColor(.red)
-            }
-            
-            // Accept Button
-            Button(action: onAccept) {
-                HStack {
-                    Image(systemName: "checkmark")
-                        .font(.headline)
-                    Text("Accept")
-                        .fontWeight(.semibold)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    onDecline()
+                    isDeclinePressed = false
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [.pink, .red]),
-                        startPoint: .leading,
-                        endPoint: .trailing
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(accentColor)
+                    .frame(width: 60, height: 60)
+                    .background(
+                        Circle()
+                            .stroke(accentColor, lineWidth: 2.5)
                     )
-                )
-                .foregroundColor(.white)
-                .cornerRadius(12)
+                    .scaleEffect(isDeclinePressed ? 0.9 : 1.0)
             }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Accept Button - Circular with checkmark
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    isAcceptPressed = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    onAccept()
+                    isAcceptPressed = false
+                }
+            } label: {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(accentColor)
+                    .frame(width: 60, height: 60)
+                    .background(
+                        Circle()
+                            .stroke(accentColor, lineWidth: 2.5)
+                    )
+                    .scaleEffect(isAcceptPressed ? 0.9 : 1.0)
+            }
+            .buttonStyle(PlainButtonStyle())
         }
     }
     
@@ -256,21 +239,4 @@ struct MatchCardView: View {
         .padding()
     }
     .background(Color(.systemGroupedBackground))
-}
-
-// MARK: - ProfileViewModel Extension for Preview
-extension ProfileViewModel {
-    init(id: Int64, name: String, email: String, phone: String, website: String, company: String, city: String, address: String, imageURL: String, matchStatus: MatchStatus, syncPending: Bool) {
-        self.id = id
-        self.name = name
-        self.email = email
-        self.phone = phone
-        self.website = website
-        self.company = company
-        self.city = city
-        self.address = address
-        self.imageURL = imageURL
-        self.matchStatus = matchStatus
-        self.syncPending = syncPending
-    }
 }

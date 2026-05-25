@@ -56,13 +56,13 @@ struct MatchListView: View {
                     }
                 }
             }
-            .navigationTitle("MatchMate")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("Profile Matches")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { viewModel.refresh() }) {
                         Image(systemName: "arrow.clockwise")
-                            .foregroundColor(.pink)
+                            .foregroundColor(Color(red: 0.18, green: 0.8, blue: 0.82))
                     }
                     .disabled(viewModel.isLoading)
                 }
@@ -116,11 +116,20 @@ struct MatchListView: View {
         ScrollView {
             LazyVStack(spacing: 20) {
                 ForEach(filteredProfiles) { profile in
-                    MatchCardView(
-                        profile: profile,
-                        onAccept: { viewModel.acceptProfile(profile.id) },
-                        onDecline: { viewModel.declineProfile(profile.id) }
-                    )
+                    NavigationLink {
+                        ProfileDetailView(
+                            profile: profile,
+                            onAccept: { viewModel.acceptProfile(profile.id) },
+                            onDecline: { viewModel.declineProfile(profile.id) }
+                        )
+                    } label: {
+                        MatchCardView(
+                            profile: profile,
+                            onAccept: { viewModel.acceptProfile(profile.id) },
+                            onDecline: { viewModel.declineProfile(profile.id) }
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal)
                 }
             }
@@ -202,6 +211,8 @@ struct FilterPillButton: View {
     let isSelected: Bool
     let action: () -> Void
     
+    private let accentColor = Color(red: 0.18, green: 0.8, blue: 0.82)
+    
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
@@ -224,10 +235,7 @@ struct FilterPillButton: View {
             .padding(.vertical, 8)
             .background(
                 Capsule()
-                    .fill(isSelected ? 
-                          LinearGradient(gradient: Gradient(colors: [.pink, .red]), startPoint: .leading, endPoint: .trailing) :
-                          LinearGradient(gradient: Gradient(colors: [Color(.systemGray5), Color(.systemGray5)]), startPoint: .leading, endPoint: .trailing)
-                    )
+                    .fill(isSelected ? accentColor : Color(.systemGray5))
             )
         }
     }

@@ -74,7 +74,7 @@ final class MatchListViewModel: ObservableObject {
     
     private func loadFromCache() {
         let cachedProfiles = persistenceService.fetchAllProfiles()
-        profiles = cachedProfiles.map { ProfileViewModel(from: $0) }
+        profiles = cachedProfiles.map { ProfileViewModel(profile: $0) }
     }
     
     func fetchFromAPI() {

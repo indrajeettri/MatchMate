@@ -90,6 +90,13 @@ final class NetworkManager: NetworkServiceProtocol {
                 
                 return data
             }
+            .handleEvents(receiveOutput: { data in
+                // Print JSON response for debugging
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("📦 [API Response] JSON:")
+                    print(jsonString)
+                }
+            })
             .decode(type: [User].self, decoder: JSONDecoder())
             .mapError { error -> NetworkError in
                 if error is DecodingError {

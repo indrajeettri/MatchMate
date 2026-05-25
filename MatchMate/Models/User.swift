@@ -67,18 +67,10 @@ struct ProfileViewModel: Identifiable {
     var matchStatus: MatchStatus
     var syncPending: Bool
     
-    // MARK: - Memberwise Initializer (for testing and flexibility)
-    init(id: Int64,
-         name: String,
-         email: String,
-         phone: String,
-         website: String,
-         company: String,
-         city: String,
-         address: String,
-         imageURL: String,
-         matchStatus: MatchStatus,
-         syncPending: Bool) {
+    /// Memberwise initializer
+    init(id: Int64, name: String, email: String, phone: String, website: String,
+         company: String, city: String, address: String, imageURL: String,
+         matchStatus: MatchStatus, syncPending: Bool) {
         self.id = id
         self.name = name
         self.email = email
@@ -92,18 +84,20 @@ struct ProfileViewModel: Identifiable {
         self.syncPending = syncPending
     }
     
-    // MARK: - Core Data Initializer
-    init(from profile: MatchProfile) {
-        self.id = profile.profileId
-        self.name = profile.name ?? "Unknown"
-        self.email = profile.email ?? ""
-        self.phone = profile.phone ?? ""
-        self.website = profile.website ?? ""
-        self.company = profile.company ?? ""
-        self.city = profile.city ?? ""
-        self.address = profile.address ?? ""
-        self.imageURL = profile.imageURL ?? ""
-        self.matchStatus = MatchStatus(rawValue: profile.matchStatus ?? "pending") ?? .pending
-        self.syncPending = profile.syncPending
+    /// Initialize from Core Data MatchProfile entity
+    init(profile: MatchProfile) {
+        self.init(
+            id: profile.profileId,
+            name: profile.name ?? "Unknown",
+            email: profile.email ?? "",
+            phone: profile.phone ?? "",
+            website: profile.website ?? "",
+            company: profile.company ?? "",
+            city: profile.city ?? "",
+            address: profile.address ?? "",
+            imageURL: profile.imageURL ?? "",
+            matchStatus: MatchStatus(rawValue: profile.matchStatus ?? "pending") ?? .pending,
+            syncPending: profile.syncPending
+        )
     }
 }
