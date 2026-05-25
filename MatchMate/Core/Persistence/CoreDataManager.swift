@@ -8,11 +8,20 @@
 import Foundation
 import CoreData
 
-final class CoreDataManager: @unchecked Sendable {
-    static let shared = CoreDataManager()
+// MARK: - Core Data Manager (Conforms to PersistenceServiceProtocol)
+final class CoreDataManager: PersistenceServiceProtocol, @unchecked Sendable {
     
+    // MARK: - Singleton
+    static let shared: PersistenceServiceProtocol = CoreDataManager()
+    
+    // MARK: - Properties
     private let persistentContainer: NSPersistentContainer
     
+    var viewContext: NSManagedObjectContext {
+        persistentContainer.viewContext
+    }
+    
+    // MARK: - Initialization
     private init() {
         persistentContainer = NSPersistentContainer(name: "MatchMate")
         persistentContainer.loadPersistentStores { storeDescription, error in
@@ -24,11 +33,8 @@ final class CoreDataManager: @unchecked Sendable {
         persistentContainer.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
     
-    var viewContext: NSManagedObjectContext {
-        persistentContainer.viewContext
-    }
-    
-    func saveContext() {
+    // MARK: - Private Helpers
+    private func saveContext() {
         let context = viewContext
         if context.hasChanges {
             do {
@@ -40,7 +46,7 @@ final class CoreDataManager: @unchecked Sendable {
         }
     }
     
-    // MARK: - Match Profile Operations
+    // MARK: - ProfileFetchingProtocol Implementation
     
     func fetchAllProfiles() -> [MatchProfile] {
         let request: NSFetchRequest<MatchProfile> = MatchProfile.fetchRequest()
@@ -66,6 +72,8 @@ final class CoreDataManager: @unchecked Sendable {
             return nil
         }
     }
+    
+    // MARK: - ProfilePersistingProtocol Implementation
     
     func saveOrUpdateProfile(from user: User) {
         let profile = fetchProfile(byId: Int64(user.id)) ?? MatchProfile(context: viewContext)
@@ -96,6 +104,20 @@ final class CoreDataManager: @unchecked Sendable {
         saveContext()
     }
     
+    func deleteAllProfiles() {
+        let request: NSFetchRequest<NSFetchRequestResult> = MatchProfile.fetchRequest()
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
+        
+        do {
+            try viewContext.execute(deleteRequest)
+            saveContext()
+        } catch {
+            print("Delete error: \(error)")
+        }
+    }
+    
+    // MARK: - SyncManagingProtocol Implementation
+    
     func fetchPendingSyncProfiles() -> [MatchProfile] {
         let request: NSFetchRequest<MatchProfile> = MatchProfile.fetchRequest()
         request.predicate = NSPredicate(format: "syncPending == YES")
@@ -112,17 +134,5 @@ final class CoreDataManager: @unchecked Sendable {
         guard let profile = fetchProfile(byId: profileId) else { return }
         profile.syncPending = false
         saveContext()
-    }
-    
-    func deleteAllProfiles() {
-        let request: NSFetchRequest<NSFetchRequestResult> = MatchProfile.fetchRequest()
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
-        
-        do {
-            try viewContext.execute(deleteRequest)
-            saveContext()
-        } catch {
-            print("Delete error: \(error)")
-        }
     }
 }

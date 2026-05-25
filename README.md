@@ -15,7 +15,7 @@ A SwiftUI-based iOS application that simulates a Matrimonial App by displaying m
 
 ## Architecture
 
-The app follows the **MVVM (Model-View-ViewModel)** design pattern:
+The app follows the **MVVM (Model-View-ViewModel)** design pattern with **SOLID Principles**:
 
 ```
 MatchMate/
@@ -30,12 +30,52 @@ MatchMate/
 ├── ViewModels/
 │   └── MatchListViewModel.swift      # Business logic and state management
 ├── Core/
+│   ├── Protocols/
+│   │   └── ServiceProtocols.swift    # Protocol definitions (SOLID)
+│   ├── Services/
+│   │   └── SyncService.swift         # Sync logic (Single Responsibility)
 │   ├── Network/
 │   │   ├── NetworkManager.swift      # API calls using URLSession
 │   │   └── NetworkMonitor.swift      # Network connectivity monitoring
 │   └── Persistence/
 │       └── CoreDataManager.swift     # Core Data operations
 └── MatchMate.xcdatamodeld/           # Core Data model
+```
+
+## SOLID Principles Implementation
+
+### S - Single Responsibility Principle
+Each class has one responsibility:
+- `NetworkManager` → API calls only
+- `CoreDataManager` → Persistence only
+- `SyncService` → Sync logic only
+- `NetworkMonitor` → Connectivity monitoring only
+- `MatchListViewModel` → UI state management only
+
+### O - Open/Closed Principle
+- Enums (`MatchStatus`, `NetworkError`, `APIEndpoint`) are extensible
+- New features can be added without modifying existing code
+
+### L - Liskov Substitution Principle
+- All services implement protocols (`NetworkServiceProtocol`, `PersistenceServiceProtocol`)
+- Mock implementations can replace real ones for testing
+
+### I - Interface Segregation Principle
+Persistence is split into focused protocols:
+- `ProfileFetchingProtocol` → Read operations
+- `ProfilePersistingProtocol` → Write operations
+- `SyncManagingProtocol` → Sync operations
+
+### D - Dependency Inversion Principle
+- `MatchListViewModel` depends on abstractions (protocols), not concretions
+- Dependencies are injected via initializer
+- Enables easy testing with mock implementations
+
+```swift
+// Dependency Injection Example
+init(networkService: NetworkServiceProtocol = NetworkManager.shared,
+     persistenceService: PersistenceServiceProtocol = CoreDataManager.shared,
+     syncService: SyncServiceProtocol? = nil)
 ```
 
 ## Technologies & Libraries Used

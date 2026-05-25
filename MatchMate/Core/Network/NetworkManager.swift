@@ -47,12 +47,16 @@ enum APIEndpoint {
     }
 }
 
-// MARK: - Network Manager
-final class NetworkManager: Sendable {
-    static let shared = NetworkManager()
+// MARK: - Network Manager (Conforms to NetworkServiceProtocol)
+final class NetworkManager: NetworkServiceProtocol {
     
+    // MARK: - Singleton
+    static let shared: NetworkServiceProtocol = NetworkManager()
+    
+    // MARK: - Properties
     private let session: URLSession
     
+    // MARK: - Initialization
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
@@ -61,7 +65,8 @@ final class NetworkManager: Sendable {
         self.session = URLSession(configuration: config)
     }
     
-    // MARK: - Fetch Users
+    // MARK: - NetworkServiceProtocol Implementation
+    
     func fetchUsers() -> AnyPublisher<[User], NetworkError> {
         guard let url = APIEndpoint.users.url else {
             return Fail(error: NetworkError.invalidURL).eraseToAnyPublisher()
@@ -96,7 +101,6 @@ final class NetworkManager: Sendable {
             .eraseToAnyPublisher()
     }
     
-    // MARK: - Sync Status (Simulated)
     func syncMatchStatus(profileId: Int64, status: MatchStatus) -> AnyPublisher<Bool, NetworkError> {
         // Simulating API call for syncing status
         // In real app, this would be an actual API endpoint

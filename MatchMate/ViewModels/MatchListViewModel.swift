@@ -8,20 +8,41 @@
 import Foundation
 import Combine
 
+// MARK: - MatchListViewModel (SOLID Compliant)
+/// Single Responsibility: Manages UI state for match list
+/// Open/Closed: Can be extended without modification
+/// Liskov Substitution: Dependencies are protocol-based
+/// Interface Segregation: Uses focused protocols
+/// Dependency Inversion: Depends on abstractions, not concretions
+
 final class MatchListViewModel: ObservableObject {
+    
+    // MARK: - Published Properties (UI State)
     @Published var profiles: [ProfileViewModel] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showError: Bool = false
     @Published var isOffline: Bool = false
     
-    private let networkManager = NetworkManager.shared
-    private let coreDataManager = CoreDataManager.shared
-    private let networkMonitor = NetworkMonitor.shared
+    // MARK: - Dependencies (Dependency Inversion Principle)
+    private let networkService: NetworkServiceProtocol
+    private let persistenceService: PersistenceServiceProtocol
+    private let syncService: SyncServiceProtocol
+    private let networkMonitor: NetworkMonitor
     
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
+    // MARK: - Initialization with Dependency Injection
+    init(networkService: NetworkServiceProtocol = NetworkManager.shared,
+         persistenceService: PersistenceServiceProtocol = CoreDataManager.shared,
+         syncService: SyncServiceProtocol? = nil,
+         networkMonitor: NetworkMonitor = NetworkMonitor.shared) {
+        
+        self.networkService = networkService
+        self.persistenceService = persistenceService
+        self.syncService = syncService ?? SyncService(networkService: networkService, persistenceService: persistenceService)
+        self.networkMonitor = networkMonitor
+        
         setupNetworkObserver()
         loadProfiles()
     }
@@ -52,7 +73,7 @@ final class MatchListViewModel: ObservableObject {
     }
     
     private func loadFromCache() {
-        let cachedProfiles = coreDataManager.fetchAllProfiles()
+        let cachedProfiles = persistenceService.fetchAllProfiles()
         profiles = cachedProfiles.map { ProfileViewModel(from: $0) }
     }
     
@@ -65,7 +86,7 @@ final class MatchListViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        networkManager.fetchUsers()
+        networkService.fetchUsers()
             .sink { [weak self] completion in
                 self?.isLoading = false
                 if case .failure(let error) = completion {
@@ -81,11 +102,11 @@ final class MatchListViewModel: ObservableObject {
     
     private func saveUsersToCache(_ users: [User]) {
         users.forEach { user in
-            coreDataManager.saveOrUpdateProfile(from: user)
+            persistenceService.saveOrUpdateProfile(from: user)
         }
     }
     
-    // MARK: - Accept/Decline Actions
+    // MARK: - Accept/Decline Actions (Single Responsibility)
     func acceptProfile(_ profileId: Int64) {
         updateMatchStatus(profileId: profileId, status: .accepted)
     }
@@ -98,7 +119,7 @@ final class MatchListViewModel: ObservableObject {
         let syncPending = !networkMonitor.isConnected
         
         // Update local database
-        coreDataManager.updateMatchStatus(profileId: profileId, status: status, syncPending: syncPending)
+        persistenceService.updateMatchStatus(profileId: profileId, status: status, syncPending: syncPending)
         
         // Update UI
         if let index = profiles.firstIndex(where: { $0.id == profileId }) {
@@ -106,41 +127,21 @@ final class MatchListViewModel: ObservableObject {
             profiles[index].syncPending = syncPending
         }
         
-        // Sync with server if online
+        // Sync with server if online (delegated to SyncService)
         if networkMonitor.isConnected {
-            syncStatusWithServer(profileId: profileId, status: status)
-        }
-    }
-    
-    private func syncStatusWithServer(profileId: Int64, status: MatchStatus) {
-        networkManager.syncMatchStatus(profileId: profileId, status: status)
-            .sink { [weak self] completion in
-                if case .failure(let error) = completion {
-                    // Mark as pending sync on failure
-                    self?.coreDataManager.updateMatchStatus(profileId: profileId, status: status, syncPending: true)
-                    print("Sync failed: \(error.localizedDescription)")
-                }
-            } receiveValue: { [weak self] success in
+            syncService.syncMatchStatus(profileId: profileId, status: status) { [weak self] success in
                 if success {
-                    self?.coreDataManager.markAsSynced(profileId: profileId)
                     if let index = self?.profiles.firstIndex(where: { $0.id == profileId }) {
                         self?.profiles[index].syncPending = false
                     }
                 }
             }
-            .store(in: &cancellables)
+        }
     }
     
-    // MARK: - Sync Pending Changes
+    // MARK: - Sync Pending Changes (Delegated to SyncService)
     func syncPendingChanges() {
-        let pendingProfiles = coreDataManager.fetchPendingSyncProfiles()
-        
-        for profile in pendingProfiles {
-            guard let statusString = profile.matchStatus,
-                  let status = MatchStatus(rawValue: statusString) else { continue }
-            
-            syncStatusWithServer(profileId: profile.profileId, status: status)
-        }
+        syncService.syncAllPendingChanges()
     }
     
     // MARK: - Error Handling

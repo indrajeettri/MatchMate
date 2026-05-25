@@ -67,6 +67,32 @@ struct ProfileViewModel: Identifiable {
     var matchStatus: MatchStatus
     var syncPending: Bool
     
+    // MARK: - Memberwise Initializer (for testing and flexibility)
+    init(id: Int64,
+         name: String,
+         email: String,
+         phone: String,
+         website: String,
+         company: String,
+         city: String,
+         address: String,
+         imageURL: String,
+         matchStatus: MatchStatus,
+         syncPending: Bool) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.phone = phone
+        self.website = website
+        self.company = company
+        self.city = city
+        self.address = address
+        self.imageURL = imageURL
+        self.matchStatus = matchStatus
+        self.syncPending = syncPending
+    }
+    
+    // MARK: - Core Data Initializer
     init(from profile: MatchProfile) {
         self.id = profile.profileId
         self.name = profile.name ?? "Unknown"
